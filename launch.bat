@@ -1,0 +1,9 @@
+@echo off
+echo Starting Zain's Modern Portfolio...
+echo.
+echo Opening portfolio in your default browser...
+start index.html
+echo.
+echo Portfolio launched successfully!
+echo Press any key to exit...
+pause >nul
