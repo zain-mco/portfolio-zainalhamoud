@@ -98,13 +98,6 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          {/* Default Credentials Info */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-800 font-medium mb-2">Default Credentials:</p>
-            <p className="text-xs text-blue-700">Email: admin@portfolio.com</p>
-            <p className="text-xs text-blue-700">Password: Admin@123456</p>
-          </div>
         </div>
       </div>
     </div>
