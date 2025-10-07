@@ -97,9 +97,6 @@ npm run dev
 
 ### Default Admin Credentials
 
-- **Email**: admin@portfolio.com
-- **Password**: Admin@123456
-
 ---
 
 ## 📁 Project Structure
