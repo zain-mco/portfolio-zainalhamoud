@@ -2,13 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { personalAPI } from '../services/api'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { Save, Upload } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useState } from 'react'
+import CloudinaryUpload from '../components/CloudinaryUpload'
 
 export default function PersonalInfo() {
   const queryClient = useQueryClient()
   const [imagePreview, setImagePreview] = useState(null)
-  const [imageFile, setImageFile] = useState(null)
 
   const { data: personal, isLoading } = useQuery({
     queryKey: ['personal'],
@@ -25,24 +25,14 @@ export default function PersonalInfo() {
     }
   })
 
-  const uploadMutation = useMutation({
-    mutationFn: personalAPI.uploadImage,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['personal'])
-      setImagePreview(data.url)
-      toast.success('Image uploaded!')
-    }
-  })
-
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setImagePreview(reader.result)
-      reader.readAsDataURL(file)
-      uploadMutation.mutate(file)
-    }
+  const handleCloudinaryUpload = (imageUrl) => {
+    setImagePreview(imageUrl)
+    toast.success('Image uploaded!')
+    // Update personal info with new image URL
+    updateMutation.mutate({ 
+      ...personal, 
+      profileImage: imageUrl 
+    })
   }
 
   const onSubmit = (data) => {
@@ -63,27 +53,11 @@ export default function PersonalInfo() {
         {/* Profile Image */}
         <div className="card">
           <h2 className="text-lg font-bold mb-4">Profile Image</h2>
-          <div className="flex items-center gap-6">
-            <img
-              src={imagePreview || personal?.profileImage || '/assets/zain.svg'}
-              alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
-            />
-            <div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-                id="profile-upload"
-              />
-              <label htmlFor="profile-upload" className="btn-primary cursor-pointer inline-flex items-center gap-2">
-                <Upload size={20} />
-                Upload New Image
-              </label>
-              <p className="text-sm text-gray-500 mt-2">JPG, PNG or SVG. Max 5MB.</p>
-            </div>
-          </div>
+          <CloudinaryUpload
+            onUpload={handleCloudinaryUpload}
+            currentImage={imagePreview || personal?.profileImage}
+            cloudName="dhrglhjcb"
+          />
         </div>
 
         {/* Basic Info */}
