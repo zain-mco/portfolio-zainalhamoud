@@ -1207,44 +1207,55 @@ section {
     
     /* Fix for profile image floating above text on mobile */
     .hero-section {
-        min-height: auto;
-        padding: 80px 0 30px;
-        display: block;
-        overflow: visible;
+        min-height: auto !important;
+        padding: 80px 0 30px !important;
+        display: block !important;
+        overflow: visible !important;
+        align-items: flex-start !important;
     }
     
     .hero-section::before,
     .hero-section::after {
-        display: none;
+        display: none !important;
+    }
+    
+    .hero-section .container {
+        position: relative;
+        z-index: 1;
     }
     
     .hero-section .row {
-        flex-direction: column;
-        display: flex;
+        flex-direction: column-reverse !important;
+        display: flex !important;
+        align-items: stretch !important;
     }
     
-    .hero-section .col-lg-6 {
-        order: 0;
-        width: 100%;
+    .hero-section .col-lg-6:first-child {
+        order: 2 !important;
+        margin-top: 0 !important;
+        padding-top: 2rem !important;
     }
     
     .hero-section .col-lg-6:last-child {
-        order: 1;
-        margin-top: 3rem;
+        order: 1 !important;
+        margin-bottom: 2rem !important;
+        position: relative !important;
     }
 
     .hero-visual {
-        height: auto;
-        position: static;
-        margin-top: 0;
-        padding: 0;
-        display: block;
+        height: auto !important;
+        position: relative !important;
+        margin-top: 0 !important;
+        padding: 2rem 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
     }
     
     .hero-content {
-        position: static;
-        z-index: auto;
-        margin-bottom: 2rem;
+        position: relative !important;
+        z-index: 2 !important;
+        width: 100% !important;
     }
 
     .floating-skill {
@@ -1252,34 +1263,36 @@ section {
     }
     
     .profile-container {
-        width: 250px;
-        height: 250px;
-        margin: 0 auto;
-        position: static;
-        transform: none;
+        width: 220px !important;
+        height: 220px !important;
+        margin: 0 auto !important;
+        position: relative !important;
+        transform: none !important;
     }
     
     .ring-1 {
-        width: 280px;
-        height: 280px;
+        width: 260px !important;
+        height: 260px !important;
     }
     
     .ring-2 {
-        width: 230px;
-        height: 230px;
+        width: 210px !important;
+        height: 210px !important;
     }
     
     .orbital-ring {
-        position: absolute;
+        position: absolute !important;
+        opacity: 0.3 !important;
     }
     
     .profile-image {
-        position: relative;
-        animation: none;
+        position: relative !important;
+        animation: none !important;
+        z-index: 1 !important;
     }
     
     .profile-image::before {
-        display: none;
+        display: none !important;
     }
     
     .section-title {
@@ -1393,22 +1406,27 @@ section {
     
     /* Fix for profile image on smaller mobile screens */
     .hero-visual {
-        height: auto;
-        position: static;
-        margin-top: 0;
-        padding: 0;
+        height: auto !important;
+        position: relative !important;
+        margin-top: 0 !important;
+        padding: 1.5rem 0 !important;
     }
     
     .profile-container {
-        width: 200px;
-        height: 200px;
-        margin: 0 auto;
-        position: static;
-        transform: none;
+        width: 180px !important;
+        height: 180px !important;
+        margin: 0 auto !important;
+        position: relative !important;
+        transform: none !important;
     }
     
     .profile-image {
-        position: static;
+        position: relative !important;
+        animation: none !important;
+    }
+    
+    .profile-image::before {
+        display: none !important;
     }
     
     .ring-1 {
