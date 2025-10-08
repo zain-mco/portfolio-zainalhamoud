@@ -1225,21 +1225,26 @@ section {
     }
     
     .hero-section .row {
-        flex-direction: column-reverse !important;
+        flex-direction: column !important;
         display: flex !important;
         align-items: stretch !important;
     }
     
+    .hero-section .col-lg-6 {
+        position: relative !important;
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+    
     .hero-section .col-lg-6:first-child {
-        order: 2 !important;
-        margin-top: 0 !important;
-        padding-top: 2rem !important;
+        margin-bottom: 2rem !important;
+        z-index: 1 !important;
     }
     
     .hero-section .col-lg-6:last-child {
-        order: 1 !important;
-        margin-bottom: 2rem !important;
+        margin-top: 2rem !important;
         position: relative !important;
+        z-index: 0 !important;
     }
 
     .hero-visual {
@@ -1250,12 +1255,15 @@ section {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
+        clear: both !important;
     }
     
     .hero-content {
         position: relative !important;
-        z-index: 2 !important;
+        z-index: 10 !important;
         width: 100% !important;
+        background: transparent !important;
+        padding-bottom: 2rem !important;
     }
 
     .floating-skill {
@@ -1268,6 +1276,7 @@ section {
         margin: 0 auto !important;
         position: relative !important;
         transform: none !important;
+        clear: both !important;
     }
     
     .ring-1 {
@@ -1293,6 +1302,15 @@ section {
     
     .profile-image::before {
         display: none !important;
+    }
+    
+    .stats-container,
+    .cta-buttons,
+    .hero-subtitle,
+    .hero-title,
+    .hero-description {
+        position: relative !important;
+        z-index: 10 !important;
     }
     
     .section-title {
