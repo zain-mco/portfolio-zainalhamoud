@@ -1208,32 +1208,78 @@ section {
     /* Fix for profile image floating above text on mobile */
     .hero-section {
         min-height: auto;
-        padding: 100px 0 50px;
+        padding: 80px 0 30px;
+        display: block;
+        overflow: visible;
+    }
+    
+    .hero-section::before,
+    .hero-section::after {
+        display: none;
+    }
+    
+    .hero-section .row {
+        flex-direction: column;
+        display: flex;
+    }
+    
+    .hero-section .col-lg-6 {
+        order: 0;
+        width: 100%;
+    }
+    
+    .hero-section .col-lg-6:last-child {
+        order: 1;
+        margin-top: 3rem;
     }
 
     .hero-visual {
         height: auto;
-        margin-top: 3rem;
-        padding: 2rem 0;
+        position: static;
+        margin-top: 0;
+        padding: 0;
+        display: block;
+    }
+    
+    .hero-content {
+        position: static;
+        z-index: auto;
+        margin-bottom: 2rem;
     }
 
     .floating-skill {
-        display: none;
+        display: none !important;
     }
     
     .profile-container {
         width: 250px;
         height: 250px;
+        margin: 0 auto;
+        position: static;
+        transform: none;
     }
     
     .ring-1 {
-        width: 320px;
-        height: 320px;
+        width: 280px;
+        height: 280px;
     }
     
     .ring-2 {
-        width: 260px;
-        height: 260px;
+        width: 230px;
+        height: 230px;
+    }
+    
+    .orbital-ring {
+        position: absolute;
+    }
+    
+    .profile-image {
+        position: relative;
+        animation: none;
+    }
+    
+    .profile-image::before {
+        display: none;
     }
     
     .section-title {
@@ -1348,13 +1394,21 @@ section {
     /* Fix for profile image on smaller mobile screens */
     .hero-visual {
         height: auto;
-        margin-top: 2rem;
-        padding: 1.5rem 0;
+        position: static;
+        margin-top: 0;
+        padding: 0;
     }
     
     .profile-container {
         width: 200px;
         height: 200px;
+        margin: 0 auto;
+        position: static;
+        transform: none;
+    }
+    
+    .profile-image {
+        position: static;
     }
     
     .ring-1 {
