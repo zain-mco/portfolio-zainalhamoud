@@ -1205,6 +1205,22 @@ section {
         gap: 1rem;
     }
     
+    /* Fix for profile image floating above text on mobile */
+    .hero-section {
+        min-height: auto;
+        padding: 100px 0 50px;
+    }
+
+    .hero-visual {
+        height: auto;
+        margin-top: 3rem;
+        padding: 2rem 0;
+    }
+
+    .floating-skill {
+        display: none;
+    }
+    
     .profile-container {
         width: 250px;
         height: 250px;
@@ -1327,6 +1343,13 @@ section {
     
     .stat-item {
         padding: 0.8rem;
+    }
+    
+    /* Fix for profile image on smaller mobile screens */
+    .hero-visual {
+        height: auto;
+        margin-top: 2rem;
+        padding: 1.5rem 0;
     }
     
     .profile-container {
