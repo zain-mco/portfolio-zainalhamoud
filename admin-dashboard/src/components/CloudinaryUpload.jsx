@@ -4,8 +4,7 @@ import { Upload, Image as ImageIcon } from 'lucide-react'
 export default function CloudinaryUpload({ 
   onUpload, 
   currentImage, 
-  cloudName = 'dhrglhjcb',
-  apiKey = '797178848664695' 
+  cloudName = 'dhrglhjcb'
 }) {
   const [preview, setPreview] = useState(currentImage)
   const widgetRef = useRef()
@@ -33,17 +32,16 @@ export default function CloudinaryUpload({
     widgetRef.current = window.cloudinary.createUploadWidget(
       {
         cloudName: cloudName,
-        uploadPreset: 'ml_default', // You might need to create this in Cloudinary settings
+        uploadPreset: 'ml_default',
         sources: ['local', 'url', 'camera'],
         multiple: false,
         maxFiles: 1,
         maxFileSize: 5000000, // 5MB
         clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
-        cropping: true,
-        croppingAspectRatio: 1,
-        croppingShowDimensions: true,
+        cropping: false,
         folder: 'portfolio',
-        resourceType: 'image'
+        resourceType: 'image',
+        showUploadMoreButton: false
       },
       (error, result) => {
         if (!error && result && result.event === 'success') {
@@ -55,32 +53,6 @@ export default function CloudinaryUpload({
     )
 
     widgetRef.current.open()
-  }
-
-  const openMediaLibrary = () => {
-    if (!window.cloudinary) {
-      alert('Cloudinary widget is loading... Please try again in a moment.')
-      return
-    }
-
-    widgetRef.current = window.cloudinary.createMediaLibrary(
-      {
-        cloudName: cloudName,
-        apiKey: apiKey,
-        multiple: false,
-        maxFiles: 1,
-        insertCaption: 'Select Image'
-      },
-      {
-        insertHandler: (data) => {
-          const imageUrl = data.assets[0].secure_url
-          setPreview(imageUrl)
-          onUpload(imageUrl)
-        }
-      }
-    )
-
-    widgetRef.current.show()
   }
 
   return (
@@ -109,7 +81,7 @@ export default function CloudinaryUpload({
 
         <button
           type="button"
-          onClick={openMediaLibrary}
+          onClick={openUploadWidget}
           className="btn-secondary flex items-center gap-2"
         >
           <ImageIcon size={20} />
@@ -118,7 +90,7 @@ export default function CloudinaryUpload({
       </div>
 
       <p className="text-sm text-gray-500">
-        Upload a new image or choose from previously uploaded images
+        Upload a new image or choose from previously uploaded images (widget shows both options)
       </p>
     </div>
   )

@@ -4,6 +4,7 @@ import { projectsAPI } from '../services/api'
 import toast from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
 import { Plus, Edit, Trash2, ExternalLink, X, Upload, GripVertical } from 'lucide-react'
+import CloudinaryUpload from '../components/CloudinaryUpload'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -384,43 +385,18 @@ export default function ProjectsPage() {
                   <option value="Mobile App">Mobile App</option>
                 </select>
               </div>
-
               {/* Image Upload */}
               <div>
                 <label className="label">Project Image *</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img src={imagePreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImagePreview(null)
-                          setImageFile(null)
-                        }}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload className="mx-auto text-gray-400 mb-2" size={32} />
-                      <p className="text-sm text-gray-600 mb-2">Click to upload or drag and drop</p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                        id="image-upload"
-                      />
-                      <label htmlFor="image-upload" className="btn-secondary cursor-pointer inline-block">
-                        Choose File
-                      </label>
-                    </div>
-                  )}
-                </div>
-                <input type="hidden" {...register('image')} />
+                <CloudinaryUpload
+                  onUpload={(imageUrl) => {
+                    setImagePreview(imageUrl)
+                    setValue('image', imageUrl)
+                  }}
+                  currentImage={imagePreview}
+                  cloudName="dhrglhjcb"
+                />
+                <input type="hidden" {...register('image', { required: 'Project image is required' })} />
               </div>
 
               {/* Project Link */}
