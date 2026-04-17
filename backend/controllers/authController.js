@@ -1,4 +1,5 @@
-const User = require('../models/User');
+const prisma = require('../config/prisma');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT Token
@@ -16,30 +17,41 @@ exports.register = async (req, res) => {
     const { username, email, password, role } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
-    if (userExists) {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { username }]
+      }
+    });
+
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User already exists'
       });
     }
 
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     // Create user
-    const user = await User.create({
-      username,
-      email,
-      password,
-      role: role || 'admin'
+    const user = await prisma.user.create({
+      data: {
+        username,
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        role: role || 'admin'
+      }
     });
 
     res.status(201).json({
       success: true,
       data: {
-        _id: user._id,
+        _id: user.id,
         username: user.username,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id)
+        token: generateToken(user.id)
       }
     });
   } catch (error) {
@@ -65,8 +77,11 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    // Check for user (include password field)
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -75,7 +90,7 @@ exports.login = async (req, res) => {
     }
 
     // Check if password matches
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -94,11 +109,11 @@ exports.login = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        _id: user._id,
+        _id: user.id,
         username: user.username,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id)
+        token: generateToken(user.id)
       }
     });
   } catch (error) {
@@ -114,11 +129,30 @@ exports.login = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
 
     res.status(200).json({
       success: true,
-      data: user
+      data: {
+        _id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
     });
   } catch (error) {
     res.status(500).json({

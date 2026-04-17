@@ -1,23 +1,61 @@
-const Personal = require('../models/Personal');
+const prisma = require('../config/prisma');
 const { uploadImage } = require('../utils/cloudinary');
+
+// Helper: format personal response to match MongoDB nested structure
+const formatPersonalResponse = (personal) => {
+  if (!personal) return null;
+  return {
+    _id: personal.id,
+    name: personal.name,
+    title: personal.title,
+    bio: personal.bio,
+    description: personal.description,
+    profileImage: personal.profileImage,
+    resumeFile: personal.resumeFile,
+    typewriterTexts: personal.typewriterTexts,
+    heroStats: {
+      projects: personal.statProjects,
+      experience: personal.statExperience,
+      satisfaction: personal.statSatisfaction
+    },
+    createdAt: personal.createdAt,
+    updatedAt: personal.updatedAt
+  };
+};
+
+// Helper: extract heroStats from request body into flat columns
+const extractPersonalData = (body) => {
+  const { heroStats, ...rest } = body;
+  const data = { ...rest };
+  
+  if (heroStats) {
+    if (heroStats.projects !== undefined) data.statProjects = heroStats.projects;
+    if (heroStats.experience !== undefined) data.statExperience = heroStats.experience;
+    if (heroStats.satisfaction !== undefined) data.statSatisfaction = heroStats.satisfaction;
+  }
+  
+  return data;
+};
 
 // @desc    Get personal info
 // @route   GET /api/personal
 // @access  Public
 exports.getPersonal = async (req, res) => {
   try {
-    let personal = await Personal.findOne();
+    let personal = await prisma.personal.findFirst();
 
     // If no personal info exists, create default
     if (!personal) {
-      personal = await Personal.create({
-        typewriterTexts: ['UI/UX Designer', 'Web Developer', 'Creative Thinker', 'Problem Solver']
+      personal = await prisma.personal.create({
+        data: {
+          typewriterTexts: ['UI/UX Designer', 'Web Developer', 'Creative Thinker', 'Problem Solver']
+        }
       });
     }
 
     res.status(200).json({
       success: true,
-      data: personal
+      data: formatPersonalResponse(personal)
     });
   } catch (error) {
     res.status(500).json({
@@ -32,20 +70,21 @@ exports.getPersonal = async (req, res) => {
 // @access  Private
 exports.updatePersonal = async (req, res) => {
   try {
-    let personal = await Personal.findOne();
+    let personal = await prisma.personal.findFirst();
+    const data = extractPersonalData(req.body);
 
     if (!personal) {
-      personal = await Personal.create(req.body);
+      personal = await prisma.personal.create({ data });
     } else {
-      personal = await Personal.findOneAndUpdate({}, req.body, {
-        new: true,
-        runValidators: true
+      personal = await prisma.personal.update({
+        where: { id: personal.id },
+        data
       });
     }
 
     res.status(200).json({
       success: true,
-      data: personal
+      data: formatPersonalResponse(personal)
     });
   } catch (error) {
     res.status(500).json({
@@ -69,10 +108,12 @@ exports.uploadProfileImage = async (req, res) => {
 
     const result = await uploadImage(req.file.buffer, 'portfolio/profile');
 
-    let personal = await Personal.findOne();
+    let personal = await prisma.personal.findFirst();
     if (personal) {
-      personal.profileImage = result.secure_url;
-      await personal.save();
+      await prisma.personal.update({
+        where: { id: personal.id },
+        data: { profileImage: result.secure_url }
+      });
     }
 
     res.status(200).json({

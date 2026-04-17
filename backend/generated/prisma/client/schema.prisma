@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      String   @default("admin")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Personal {
+  id               String   @id @default(cuid())
+  name             String   @default("Zain L. Alhamoud")
+  title            String   @default("UI/UX Designer & Web Developer")
+  bio              String   @default("A passionate 27-year-old designer and developer from Syria")
+  description      String?  @default("specializing in creating beautiful, functional digital experiences that solve real-world problems and delight users.")
+  profileImage     String   @default("/assets/zain.svg")
+  resumeFile       String   @default("")
+  typewriterTexts  String[]
+  statProjects     String   @default("15+")
+  statExperience   String   @default("3+")
+  statSatisfaction String   @default("100%")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model About {
+  id             String           @id @default(cuid())
+  description    String
+  workExperience WorkExperience[]
+  education      Education[]
+  certifications Certification[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model WorkExperience {
+  id               String   @id @default(cuid())
+  title            String
+  company          String
+  duration         String
+  location         String
+  responsibilities String[]
+  order            Int      @default(0)
+  aboutId          String
+  about            About    @relation(fields: [aboutId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id          String  @id @default(cuid())
+  degree      String
+  institution String
+  duration    String
+  description String?
+  order       Int     @default(0)
+  aboutId     String
+  about       About   @relation(fields: [aboutId], references: [id], onDelete: Cascade)
+}
+
+model Certification {
+  id      String  @id @default(cuid())
+  name    String
+  issuer  String
+  link    String?
+  image   String?
+  aboutId String
+  about   About   @relation(fields: [aboutId], references: [id], onDelete: Cascade)
+}
+
+model SkillCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String   @default("fas fa-code")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id         String   @id @default(cuid())
+  name       String
+  percentage Int
+  icon       String
+  category   String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AdditionalTech {
+  id           String   @id @default(cuid())
+  technologies String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  category     String
+  image        String
+  projectLink  String
+  githubLink   String   @default("")
+  technologies String[]
+  featured     Boolean  @default(false)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Contact {
+  id          String       @id @default(cuid())
+  email       String       @default("zenlalhamoud@gmail.com")
+  phone       String       @default("+971 (504) 235-113")
+  location    String?      @default("Abu Dhabi, UAE")
+  whatsapp    String?      @default("971504235113")
+  socialLinks SocialLink[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model SocialLink {
+  id        String  @id @default(cuid())
+  platform  String
+  url       String
+  icon      String
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Settings {
+  id                  String   @id @default(cuid())
+  themePrimaryColor   String   @default("#0066FF")
+  themeSecondaryColor String   @default("#8B5CF6")
+  themeAccentColor    String   @default("#06D6A0")
+  seoTitle            String   @default("Zain L. Alhamoud - UI/UX Designer & Web Developer")
+  seoDescription      String   @default("Professional portfolio showcasing modern web development and design projects")
+  seoKeywords         String   @default("UI/UX Designer, Web Developer, React, JavaScript, Portfolio")
+  seoOgImage          String   @default("")
+  googleAnalyticsId   String   @default("")
+  maintenanceMode     Boolean  @default(false)
+  customCSS           String   @default("")
+  customJS            String   @default("")
+  footerText          String   @default("© 2025 Zain L. Alhamoud. All rights reserved.")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Visitor {
+  id        String   @id @default(cuid())
+  ipAddress String
+  userAgent String
+  timestamp DateTime @default(now())
+  browser   String?
+  os        String?
+  device    String?
+  referrer  String?
+  country   String?
+  city      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ipAddress])
+  @@index([timestamp])
+  @@index([ipAddress, timestamp])
+}

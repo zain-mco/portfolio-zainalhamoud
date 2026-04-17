@@ -1,17 +1,41 @@
-const { SkillCategory, Skill, AdditionalTech } = require('../models/Skill');
+const prisma = require('../config/prisma');
+
+// Helper: format skill response
+const formatSkillResponse = (skill) => ({
+  _id: skill.id,
+  name: skill.name,
+  percentage: skill.percentage,
+  icon: skill.icon,
+  category: skill.category,
+  order: skill.order,
+  createdAt: skill.createdAt,
+  updatedAt: skill.updatedAt
+});
+
+// Helper: format category response
+const formatCategoryResponse = (category) => ({
+  _id: category.id,
+  name: category.name,
+  icon: category.icon,
+  order: category.order,
+  createdAt: category.createdAt,
+  updatedAt: category.updatedAt
+});
 
 // @desc    Get all skills
 // @route   GET /api/skills
 // @access  Public
 exports.getSkills = async (req, res) => {
   try {
-    const skills = await Skill.find().sort({ order: 1 });
-    const additionalTech = await AdditionalTech.findOne();
+    const skills = await prisma.skill.findMany({
+      orderBy: { order: 'asc' }
+    });
+    const additionalTech = await prisma.additionalTech.findFirst();
 
     res.status(200).json({
       success: true,
       data: {
-        skills,
+        skills: skills.map(formatSkillResponse),
         additionalTechnologies: additionalTech ? additionalTech.technologies : []
       }
     });
@@ -28,11 +52,16 @@ exports.getSkills = async (req, res) => {
 // @access  Private
 exports.createSkill = async (req, res) => {
   try {
-    const skill = await Skill.create(req.body);
+    const data = { ...req.body };
+    // Ensure percentage and order are numbers
+    if (typeof data.percentage === 'string') data.percentage = parseInt(data.percentage, 10);
+    if (typeof data.order === 'string') data.order = parseInt(data.order, 10);
+
+    const skill = await prisma.skill.create({ data });
 
     res.status(201).json({
       success: true,
-      data: skill
+      data: formatSkillResponse(skill)
     });
   } catch (error) {
     res.status(500).json({
@@ -47,23 +76,26 @@ exports.createSkill = async (req, res) => {
 // @access  Private
 exports.updateSkill = async (req, res) => {
   try {
-    const skill = await Skill.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
+    const data = { ...req.body };
+    if (typeof data.percentage === 'string') data.percentage = parseInt(data.percentage, 10);
+    if (typeof data.order === 'string') data.order = parseInt(data.order, 10);
+
+    const skill = await prisma.skill.update({
+      where: { id: req.params.id },
+      data
     });
 
-    if (!skill) {
+    res.status(200).json({
+      success: true,
+      data: formatSkillResponse(skill)
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
       return res.status(404).json({
         success: false,
         message: 'Skill not found'
       });
     }
-
-    res.status(200).json({
-      success: true,
-      data: skill
-    });
-  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message
@@ -76,20 +108,21 @@ exports.updateSkill = async (req, res) => {
 // @access  Private
 exports.deleteSkill = async (req, res) => {
   try {
-    const skill = await Skill.findByIdAndDelete(req.params.id);
-
-    if (!skill) {
-      return res.status(404).json({
-        success: false,
-        message: 'Skill not found'
-      });
-    }
+    await prisma.skill.delete({
+      where: { id: req.params.id }
+    });
 
     res.status(200).json({
       success: true,
       message: 'Skill deleted successfully'
     });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'Skill not found'
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message
@@ -104,14 +137,14 @@ exports.reorderSkills = async (req, res) => {
   try {
     const { skills } = req.body;
 
-    const bulkOps = skills.map(skill => ({
-      updateOne: {
-        filter: { _id: skill.id },
-        update: { order: skill.order }
-      }
-    }));
-
-    await Skill.bulkWrite(bulkOps);
+    await prisma.$transaction(
+      skills.map(skill =>
+        prisma.skill.update({
+          where: { id: skill.id },
+          data: { order: skill.order }
+        })
+      )
+    );
 
     res.status(200).json({
       success: true,
@@ -130,20 +163,27 @@ exports.reorderSkills = async (req, res) => {
 // @access  Private
 exports.updateAdditionalTech = async (req, res) => {
   try {
-    let additionalTech = await AdditionalTech.findOne();
+    let additionalTech = await prisma.additionalTech.findFirst();
 
     if (!additionalTech) {
-      additionalTech = await AdditionalTech.create(req.body);
+      additionalTech = await prisma.additionalTech.create({
+        data: { technologies: req.body.technologies || [] }
+      });
     } else {
-      additionalTech = await AdditionalTech.findOneAndUpdate({}, req.body, {
-        new: true,
-        runValidators: true
+      additionalTech = await prisma.additionalTech.update({
+        where: { id: additionalTech.id },
+        data: { technologies: req.body.technologies || [] }
       });
     }
 
     res.status(200).json({
       success: true,
-      data: additionalTech
+      data: {
+        _id: additionalTech.id,
+        technologies: additionalTech.technologies,
+        createdAt: additionalTech.createdAt,
+        updatedAt: additionalTech.updatedAt
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -160,11 +200,13 @@ exports.updateAdditionalTech = async (req, res) => {
 // @access  Public
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await SkillCategory.find().sort({ order: 1 });
+    const categories = await prisma.skillCategory.findMany({
+      orderBy: { order: 'asc' }
+    });
 
     res.status(200).json({
       success: true,
-      data: categories
+      data: categories.map(formatCategoryResponse)
     });
   } catch (error) {
     res.status(500).json({
@@ -179,15 +221,18 @@ exports.getCategories = async (req, res) => {
 // @access  Private
 exports.createCategory = async (req, res) => {
   try {
-    const category = await SkillCategory.create(req.body);
+    const data = { ...req.body };
+    if (typeof data.order === 'string') data.order = parseInt(data.order, 10);
+
+    const category = await prisma.skillCategory.create({ data });
 
     res.status(201).json({
       success: true,
-      data: category
+      data: formatCategoryResponse(category)
     });
   } catch (error) {
-    // Handle duplicate category name
-    if (error.code === 11000) {
+    // Handle duplicate category name (Prisma unique constraint violation)
+    if (error.code === 'P2002') {
       return res.status(400).json({
         success: false,
         message: 'Category name already exists'
@@ -205,29 +250,27 @@ exports.createCategory = async (req, res) => {
 // @access  Private
 exports.updateCategory = async (req, res) => {
   try {
-    const category = await SkillCategory.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+    const data = { ...req.body };
+    if (typeof data.order === 'string') data.order = parseInt(data.order, 10);
 
-    if (!category) {
+    const category = await prisma.skillCategory.update({
+      where: { id: req.params.id },
+      data
+    });
+
+    res.status(200).json({
+      success: true,
+      data: formatCategoryResponse(category)
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
       return res.status(404).json({
         success: false,
         message: 'Category not found'
       });
     }
-
-    res.status(200).json({
-      success: true,
-      data: category
-    });
-  } catch (error) {
     // Handle duplicate category name
-    if (error.code === 11000) {
+    if (error.code === 'P2002') {
       return res.status(400).json({
         success: false,
         message: 'Category name already exists'
@@ -245,7 +288,9 @@ exports.updateCategory = async (req, res) => {
 // @access  Private
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await SkillCategory.findById(req.params.id);
+    const category = await prisma.skillCategory.findUnique({
+      where: { id: req.params.id }
+    });
 
     if (!category) {
       return res.status(404).json({
@@ -255,7 +300,9 @@ exports.deleteCategory = async (req, res) => {
     }
 
     // Check if any skills are using this category
-    const skillsCount = await Skill.countDocuments({ category: category.name });
+    const skillsCount = await prisma.skill.count({
+      where: { category: category.name }
+    });
     
     if (skillsCount > 0) {
       return res.status(400).json({
@@ -264,7 +311,9 @@ exports.deleteCategory = async (req, res) => {
       });
     }
 
-    await SkillCategory.findByIdAndDelete(req.params.id);
+    await prisma.skillCategory.delete({
+      where: { id: req.params.id }
+    });
 
     res.status(200).json({
       success: true,
@@ -285,14 +334,14 @@ exports.reorderCategories = async (req, res) => {
   try {
     const { categories } = req.body;
 
-    const bulkOps = categories.map(category => ({
-      updateOne: {
-        filter: { _id: category.id },
-        update: { order: category.order }
-      }
-    }));
-
-    await SkillCategory.bulkWrite(bulkOps);
+    await prisma.$transaction(
+      categories.map(category =>
+        prisma.skillCategory.update({
+          where: { id: category.id },
+          data: { order: category.order }
+        })
+      )
+    );
 
     res.status(200).json({
       success: true,

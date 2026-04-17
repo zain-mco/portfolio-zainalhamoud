@@ -1,24 +1,65 @@
-const About = require('../models/About');
+const prisma = require('../config/prisma');
+
+// Helper: format about response to match MongoDB nested structure
+const formatAboutResponse = (about) => {
+  if (!about) return null;
+  return {
+    _id: about.id,
+    description: about.description,
+    workExperience: (about.workExperience || []).map(we => ({
+      _id: we.id,
+      title: we.title,
+      company: we.company,
+      duration: we.duration,
+      location: we.location,
+      responsibilities: we.responsibilities,
+      order: we.order
+    })),
+    education: (about.education || []).map(ed => ({
+      _id: ed.id,
+      degree: ed.degree,
+      institution: ed.institution,
+      duration: ed.duration,
+      description: ed.description,
+      order: ed.order
+    })),
+    certifications: (about.certifications || []).map(cert => ({
+      _id: cert.id,
+      name: cert.name,
+      issuer: cert.issuer,
+      link: cert.link,
+      image: cert.image
+    })),
+    createdAt: about.createdAt,
+    updatedAt: about.updatedAt
+  };
+};
+
+const includeAll = {
+  workExperience: { orderBy: { order: 'asc' } },
+  education: { orderBy: { order: 'asc' } },
+  certifications: true
+};
 
 // @desc    Get about info
 // @route   GET /api/about
 // @access  Public
 exports.getAbout = async (req, res) => {
   try {
-    let about = await About.findOne();
+    let about = await prisma.about.findFirst({ include: includeAll });
 
     if (!about) {
-      about = await About.create({
-        description: 'Default about description',
-        workExperience: [],
-        education: [],
-        certifications: []
+      about = await prisma.about.create({
+        data: {
+          description: 'Default about description',
+        },
+        include: includeAll
       });
     }
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(about)
     });
   } catch (error) {
     res.status(500).json({
@@ -33,20 +74,25 @@ exports.getAbout = async (req, res) => {
 // @access  Private
 exports.updateAbout = async (req, res) => {
   try {
-    let about = await About.findOne();
+    let about = await prisma.about.findFirst();
+    const { description } = req.body;
 
     if (!about) {
-      about = await About.create(req.body);
+      about = await prisma.about.create({
+        data: { description: description || 'Default about description' },
+        include: includeAll
+      });
     } else {
-      about = await About.findOneAndUpdate({}, req.body, {
-        new: true,
-        runValidators: true
+      about = await prisma.about.update({
+        where: { id: about.id },
+        data: { description },
+        include: includeAll
       });
     }
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(about)
     });
   } catch (error) {
     res.status(500).json({
@@ -61,7 +107,7 @@ exports.updateAbout = async (req, res) => {
 // @access  Private
 exports.addExperience = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -70,12 +116,18 @@ exports.addExperience = async (req, res) => {
       });
     }
 
-    about.workExperience.push(req.body);
-    await about.save();
+    await prisma.workExperience.create({
+      data: {
+        ...req.body,
+        aboutId: about.id
+      }
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(201).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -90,7 +142,7 @@ exports.addExperience = async (req, res) => {
 // @access  Private
 exports.updateExperience = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -99,7 +151,10 @@ exports.updateExperience = async (req, res) => {
       });
     }
 
-    const experience = about.workExperience.id(req.params.id);
+    const experience = await prisma.workExperience.findUnique({
+      where: { id: req.params.id }
+    });
+
     if (!experience) {
       return res.status(404).json({
         success: false,
@@ -107,12 +162,16 @@ exports.updateExperience = async (req, res) => {
       });
     }
 
-    Object.assign(experience, req.body);
-    await about.save();
+    await prisma.workExperience.update({
+      where: { id: req.params.id },
+      data: req.body
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -127,7 +186,7 @@ exports.updateExperience = async (req, res) => {
 // @access  Private
 exports.deleteExperience = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -136,12 +195,15 @@ exports.deleteExperience = async (req, res) => {
       });
     }
 
-    about.workExperience.pull(req.params.id);
-    await about.save();
+    await prisma.workExperience.delete({
+      where: { id: req.params.id }
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -156,7 +218,7 @@ exports.deleteExperience = async (req, res) => {
 // @access  Private
 exports.addEducation = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -165,12 +227,18 @@ exports.addEducation = async (req, res) => {
       });
     }
 
-    about.education.push(req.body);
-    await about.save();
+    await prisma.education.create({
+      data: {
+        ...req.body,
+        aboutId: about.id
+      }
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(201).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -185,7 +253,7 @@ exports.addEducation = async (req, res) => {
 // @access  Private
 exports.updateEducation = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -194,7 +262,10 @@ exports.updateEducation = async (req, res) => {
       });
     }
 
-    const education = about.education.id(req.params.id);
+    const education = await prisma.education.findUnique({
+      where: { id: req.params.id }
+    });
+
     if (!education) {
       return res.status(404).json({
         success: false,
@@ -202,12 +273,16 @@ exports.updateEducation = async (req, res) => {
       });
     }
 
-    Object.assign(education, req.body);
-    await about.save();
+    await prisma.education.update({
+      where: { id: req.params.id },
+      data: req.body
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -222,7 +297,7 @@ exports.updateEducation = async (req, res) => {
 // @access  Private
 exports.deleteEducation = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -231,12 +306,15 @@ exports.deleteEducation = async (req, res) => {
       });
     }
 
-    about.education.pull(req.params.id);
-    await about.save();
+    await prisma.education.delete({
+      where: { id: req.params.id }
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -251,7 +329,7 @@ exports.deleteEducation = async (req, res) => {
 // @access  Private
 exports.addCertification = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -260,12 +338,18 @@ exports.addCertification = async (req, res) => {
       });
     }
 
-    about.certifications.push(req.body);
-    await about.save();
+    await prisma.certification.create({
+      data: {
+        ...req.body,
+        aboutId: about.id
+      }
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(201).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -280,7 +364,7 @@ exports.addCertification = async (req, res) => {
 // @access  Private
 exports.updateCertification = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -289,7 +373,10 @@ exports.updateCertification = async (req, res) => {
       });
     }
 
-    const certification = about.certifications.id(req.params.id);
+    const certification = await prisma.certification.findUnique({
+      where: { id: req.params.id }
+    });
+
     if (!certification) {
       return res.status(404).json({
         success: false,
@@ -297,12 +384,16 @@ exports.updateCertification = async (req, res) => {
       });
     }
 
-    Object.assign(certification, req.body);
-    await about.save();
+    await prisma.certification.update({
+      where: { id: req.params.id },
+      data: req.body
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({
@@ -317,7 +408,7 @@ exports.updateCertification = async (req, res) => {
 // @access  Private
 exports.deleteCertification = async (req, res) => {
   try {
-    const about = await About.findOne();
+    const about = await prisma.about.findFirst();
     
     if (!about) {
       return res.status(404).json({
@@ -326,12 +417,15 @@ exports.deleteCertification = async (req, res) => {
       });
     }
 
-    about.certifications.pull(req.params.id);
-    await about.save();
+    await prisma.certification.delete({
+      where: { id: req.params.id }
+    });
+
+    const updated = await prisma.about.findFirst({ include: includeAll });
 
     res.status(200).json({
       success: true,
-      data: about
+      data: formatAboutResponse(updated)
     });
   } catch (error) {
     res.status(500).json({

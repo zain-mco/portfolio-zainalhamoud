@@ -5,13 +5,10 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+const prisma = require('./config/prisma');
 
 // Load env vars
 dotenv.config();
-
-// Connect to database
-connectDB();
 
 const app = express();
 
@@ -64,12 +61,24 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/visitors', require('./routes/visitors'));
 
 // Health check route
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Portfolio API is running',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      success: true,
+      message: 'Portfolio API is running',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(200).json({
+      success: true,
+      message: 'Portfolio API is running',
+      database: 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Error handler
@@ -102,6 +111,7 @@ const server = app.listen(PORT, () => {
 ║   📍 Port: ${PORT}                          ║
 ║   🌍 Mode: ${process.env.NODE_ENV}         ║
 ║   📡 API: http://localhost:${PORT}/api     ║
+║   🗄️  DB: Neon PostgreSQL (Prisma)         ║
 ║                                            ║
 ╚════════════════════════════════════════════╝
   `);
@@ -113,3 +123,16 @@ process.on('unhandledRejection', (err, promise) => {
   // Close server & exit process
   server.close(() => process.exit(1));
 });
+
+// Graceful shutdown - disconnect Prisma
+const gracefulShutdown = async () => {
+  console.log('🔄 Shutting down gracefully...');
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);

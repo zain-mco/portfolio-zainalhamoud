@@ -1,4 +1,4 @@
-const Visitor = require('../models/Visitor');
+const prisma = require('../config/prisma');
 
 // Helper function to parse user agent
 const parseUserAgent = (userAgent) => {
@@ -46,20 +46,25 @@ exports.trackVisitor = async (req, res) => {
     const { browser, os, device } = parseUserAgent(userAgent);
     
     // Check if this IP visited recently (within last 30 minutes to avoid duplicate counts)
-    const recentVisit = await Visitor.findOne({
-      ipAddress,
-      timestamp: { $gte: new Date(Date.now() - 30 * 60 * 1000) }
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const recentVisit = await prisma.visitor.findFirst({
+      where: {
+        ipAddress,
+        timestamp: { gte: thirtyMinutesAgo }
+      }
     });
     
     if (!recentVisit) {
       // Create new visitor record
-      const visitor = await Visitor.create({
-        ipAddress,
-        userAgent,
-        browser,
-        os,
-        device,
-        referrer
+      await prisma.visitor.create({
+        data: {
+          ipAddress,
+          userAgent,
+          browser,
+          os,
+          device,
+          referrer
+        }
       });
       
       res.status(201).json({
@@ -86,66 +91,77 @@ exports.trackVisitor = async (req, res) => {
 // @access  Private (Admin only)
 exports.getVisitorStats = async (req, res) => {
   try {
-    // Total unique visitors
-    const totalVisitors = await Visitor.countDocuments();
+    // Total visitors
+    const totalVisitors = await prisma.visitor.count();
     
     // Visitors today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const visitorsToday = await Visitor.countDocuments({
-      timestamp: { $gte: today }
+    const visitorsToday = await prisma.visitor.count({
+      where: { timestamp: { gte: today } }
     });
     
     // Visitors this week
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const visitorsThisWeek = await Visitor.countDocuments({
-      timestamp: { $gte: weekAgo }
+    const visitorsThisWeek = await prisma.visitor.count({
+      where: { timestamp: { gte: weekAgo } }
     });
     
     // Visitors this month
     const monthAgo = new Date();
     monthAgo.setMonth(monthAgo.getMonth() - 1);
-    const visitorsThisMonth = await Visitor.countDocuments({
-      timestamp: { $gte: monthAgo }
+    const visitorsThisMonth = await prisma.visitor.count({
+      where: { timestamp: { gte: monthAgo } }
     });
     
     // Browser statistics
-    const browserStats = await Visitor.aggregate([
-      { $group: { _id: '$browser', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
-    ]);
+    const browserStatsRaw = await prisma.visitor.groupBy({
+      by: ['browser'],
+      _count: { browser: true },
+      orderBy: { _count: { browser: 'desc' } },
+      take: 5
+    });
+    const browserStats = browserStatsRaw.map(b => ({
+      _id: b.browser,
+      count: b._count.browser
+    }));
     
     // OS statistics
-    const osStats = await Visitor.aggregate([
-      { $group: { _id: '$os', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
-    ]);
+    const osStatsRaw = await prisma.visitor.groupBy({
+      by: ['os'],
+      _count: { os: true },
+      orderBy: { _count: { os: 'desc' } },
+      take: 5
+    });
+    const osStats = osStatsRaw.map(o => ({
+      _id: o.os,
+      count: o._count.os
+    }));
     
     // Device statistics
-    const deviceStats = await Visitor.aggregate([
-      { $group: { _id: '$device', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
+    const deviceStatsRaw = await prisma.visitor.groupBy({
+      by: ['device'],
+      _count: { device: true },
+      orderBy: { _count: { device: 'desc' } }
+    });
+    const deviceStats = deviceStatsRaw.map(d => ({
+      _id: d.device,
+      count: d._count.device
+    }));
     
-    // Daily visitors for the last 30 days
+    // Daily visitors for the last 30 days (use raw SQL for date formatting)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const dailyVisitors = await Visitor.aggregate([
-      { $match: { timestamp: { $gte: thirtyDaysAgo } } },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$timestamp' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
+    const dailyVisitorsRaw = await prisma.$queryRaw`
+      SELECT TO_CHAR(timestamp, 'YYYY-MM-DD') as "_id", 
+             CAST(COUNT(*) AS INTEGER) as "count"
+      FROM "Visitor"
+      WHERE timestamp >= ${thirtyDaysAgo}
+      GROUP BY TO_CHAR(timestamp, 'YYYY-MM-DD')
+      ORDER BY "_id" ASC
+    `;
     
     res.status(200).json({
       success: true,
@@ -157,7 +173,7 @@ exports.getVisitorStats = async (req, res) => {
         browserStats,
         osStats,
         deviceStats,
-        dailyVisitors
+        dailyVisitors: dailyVisitorsRaw
       }
     });
   } catch (error) {
@@ -176,15 +192,28 @@ exports.getRecentVisitors = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     
-    const visitors = await Visitor.find()
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .select('-__v');
+    const visitors = await prisma.visitor.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: limit
+    });
     
     res.status(200).json({
       success: true,
       count: visitors.length,
-      data: visitors
+      data: visitors.map(v => ({
+        _id: v.id,
+        ipAddress: v.ipAddress,
+        userAgent: v.userAgent,
+        timestamp: v.timestamp,
+        browser: v.browser,
+        os: v.os,
+        device: v.device,
+        referrer: v.referrer,
+        country: v.country,
+        city: v.city,
+        createdAt: v.createdAt,
+        updatedAt: v.updatedAt
+      }))
     });
   } catch (error) {
     console.error('Error getting recent visitors:', error);

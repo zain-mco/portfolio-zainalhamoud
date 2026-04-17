@@ -1,24 +1,51 @@
-const { Contact, Message } = require('../models/Contact');
+const prisma = require('../config/prisma');
+
+// Helper: format contact response to match MongoDB nested structure
+const formatContactResponse = (contact) => {
+  if (!contact) return null;
+  return {
+    _id: contact.id,
+    email: contact.email,
+    phone: contact.phone,
+    location: contact.location,
+    whatsapp: contact.whatsapp,
+    socialLinks: (contact.socialLinks || []).map(sl => ({
+      _id: sl.id,
+      platform: sl.platform,
+      url: sl.url,
+      icon: sl.icon
+    })),
+    createdAt: contact.createdAt,
+    updatedAt: contact.updatedAt
+  };
+};
 
 // @desc    Get contact info
 // @route   GET /api/contact
 // @access  Public
 exports.getContact = async (req, res) => {
   try {
-    let contact = await Contact.findOne();
+    let contact = await prisma.contact.findFirst({
+      include: { socialLinks: true }
+    });
 
     if (!contact) {
-      contact = await Contact.create({
-        socialLinks: [
-          { platform: 'WhatsApp', url: 'https://wa.me/971504235113', icon: 'fab fa-whatsapp' },
-          { platform: 'LinkedIn', url: 'https://www.linkedin.com/in/zain-l-alhamoud-5bb414282/', icon: 'fab fa-linkedin' }
-        ]
+      contact = await prisma.contact.create({
+        data: {
+          socialLinks: {
+            create: [
+              { platform: 'WhatsApp', url: 'https://wa.me/971504235113', icon: 'fab fa-whatsapp' },
+              { platform: 'LinkedIn', url: 'https://www.linkedin.com/in/zain-l-alhamoud-5bb414282/', icon: 'fab fa-linkedin' }
+            ]
+          }
+        },
+        include: { socialLinks: true }
       });
     }
 
     res.status(200).json({
       success: true,
-      data: contact
+      data: formatContactResponse(contact)
     });
   } catch (error) {
     res.status(500).json({
@@ -33,20 +60,54 @@ exports.getContact = async (req, res) => {
 // @access  Private
 exports.updateContact = async (req, res) => {
   try {
-    let contact = await Contact.findOne();
+    let contact = await prisma.contact.findFirst();
+    const { socialLinks, ...contactData } = req.body;
 
     if (!contact) {
-      contact = await Contact.create(req.body);
-    } else {
-      contact = await Contact.findOneAndUpdate({}, req.body, {
-        new: true,
-        runValidators: true
+      contact = await prisma.contact.create({
+        data: {
+          ...contactData,
+          ...(socialLinks && {
+            socialLinks: {
+              create: socialLinks
+            }
+          })
+        },
+        include: { socialLinks: true }
       });
+    } else {
+      // Update contact fields
+      contact = await prisma.contact.update({
+        where: { id: contact.id },
+        data: contactData,
+        include: { socialLinks: true }
+      });
+
+      // If socialLinks are provided, replace them
+      if (socialLinks) {
+        // Delete existing social links
+        await prisma.socialLink.deleteMany({
+          where: { contactId: contact.id }
+        });
+
+        // Create new social links
+        await prisma.socialLink.createMany({
+          data: socialLinks.map(sl => ({
+            ...sl,
+            contactId: contact.id
+          }))
+        });
+
+        // Refetch with updated links
+        contact = await prisma.contact.findFirst({
+          include: { socialLinks: true }
+        });
+      }
     }
 
     res.status(200).json({
       success: true,
-      data: contact
+      data: formatContactResponse(contact)
     });
   } catch (error) {
     res.status(500).json({
@@ -61,11 +122,22 @@ exports.updateContact = async (req, res) => {
 // @access  Public
 exports.submitMessage = async (req, res) => {
   try {
-    const message = await Message.create(req.body);
+    const message = await prisma.message.create({
+      data: req.body
+    });
 
     res.status(201).json({
       success: true,
-      data: message,
+      data: {
+        _id: message.id,
+        name: message.name,
+        email: message.email,
+        subject: message.subject,
+        message: message.message,
+        isRead: message.isRead,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt
+      },
       message: 'Message sent successfully'
     });
   } catch (error) {
@@ -81,12 +153,23 @@ exports.submitMessage = async (req, res) => {
 // @access  Private
 exports.getMessages = async (req, res) => {
   try {
-    const messages = await Message.find().sort({ createdAt: -1 });
+    const messages = await prisma.message.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.status(200).json({
       success: true,
       count: messages.length,
-      data: messages
+      data: messages.map(m => ({
+        _id: m.id,
+        name: m.name,
+        email: m.email,
+        subject: m.subject,
+        message: m.message,
+        isRead: m.isRead,
+        createdAt: m.createdAt,
+        updatedAt: m.updatedAt
+      }))
     });
   } catch (error) {
     res.status(500).json({
@@ -101,24 +184,31 @@ exports.getMessages = async (req, res) => {
 // @access  Private
 exports.markAsRead = async (req, res) => {
   try {
-    const message = await Message.findByIdAndUpdate(
-      req.params.id,
-      { isRead: true },
-      { new: true }
-    );
+    const message = await prisma.message.update({
+      where: { id: req.params.id },
+      data: { isRead: true }
+    });
 
-    if (!message) {
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: message.id,
+        name: message.name,
+        email: message.email,
+        subject: message.subject,
+        message: message.message,
+        isRead: message.isRead,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt
+      }
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       });
     }
-
-    res.status(200).json({
-      success: true,
-      data: message
-    });
-  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message
@@ -131,20 +221,21 @@ exports.markAsRead = async (req, res) => {
 // @access  Private
 exports.deleteMessage = async (req, res) => {
   try {
-    const message = await Message.findByIdAndDelete(req.params.id);
-
-    if (!message) {
-      return res.status(404).json({
-        success: false,
-        message: 'Message not found'
-      });
-    }
+    await prisma.message.delete({
+      where: { id: req.params.id }
+    });
 
     res.status(200).json({
       success: true,
       message: 'Message deleted successfully'
     });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message
