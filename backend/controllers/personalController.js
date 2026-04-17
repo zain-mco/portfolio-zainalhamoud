@@ -71,7 +71,8 @@ exports.getPersonal = async (req, res) => {
 exports.updatePersonal = async (req, res) => {
   try {
     let personal = await prisma.personal.findFirst();
-    const data = extractPersonalData(req.body);
+    const { _id, id, createdAt, updatedAt, __v, ...bodyWithoutMeta } = req.body;
+    const data = extractPersonalData(bodyWithoutMeta);
 
     if (!personal) {
       personal = await prisma.personal.create({ data });
