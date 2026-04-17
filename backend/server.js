@@ -59,7 +59,7 @@ app.use('/api/projects', require('./routes/projects'));
 app.use('/api/contact', require('./routes/contact'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/visitors', require('./routes/visitors'));
-
+app.use('/api/migrate', require('./routes/migrateRoute'));
 // Health check route
 app.get('/api/health', async (req, res) => {
   try {
