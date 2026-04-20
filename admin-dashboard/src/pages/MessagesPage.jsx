@@ -38,7 +38,7 @@ export default function MessagesPage() {
 
       <div className="space-y-4">
         {messages?.map((message) => (
-          <div key={message._id} className={`card ${!message.isRead ? 'border-l-4 border-blue-500' : ''}`}>
+          <div key={message.id} className={`card ${!message.isRead ? 'border-l-4 border-blue-500' : ''}`}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -57,7 +57,7 @@ export default function MessagesPage() {
               <div className="flex gap-2">
                 {!message.isRead && (
                   <button
-                    onClick={() => markReadMutation.mutate(message._id)}
+                    onClick={() => markReadMutation.mutate(message.id)}
                     className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg"
                   >
                     <Mail size={16} />
@@ -66,7 +66,7 @@ export default function MessagesPage() {
                 <button
                   onClick={() => {
                     if (confirm('Delete this message?')) {
-                      deleteMutation.mutate(message._id)
+                      deleteMutation.mutate(message.id)
                     }
                   }}
                   className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg"

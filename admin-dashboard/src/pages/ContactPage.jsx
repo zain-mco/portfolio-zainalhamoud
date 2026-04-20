@@ -348,7 +348,7 @@ export default function ContactPage() {
           <div className="space-y-4">
             {messages.map((message) => (
               <div
-                key={message._id}
+                key={message.id}
                 className={`p-4 border rounded-lg ${
                   message.isRead ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
                 }`}
@@ -361,14 +361,14 @@ export default function ContactPage() {
                   <div className="flex gap-2 items-center">
                     {!message.isRead && (
                       <button
-                        onClick={() => handleMarkAsRead(message._id)}
+                        onClick={() => handleMarkAsRead(message.id)}
                         className="text-sm text-blue-600 hover:text-blue-700 px-2 py-1"
                       >
                         Mark as Read
                       </button>
                     )}
                     <button
-                      onClick={() => handleDeleteMessage(message._id)}
+                      onClick={() => handleDeleteMessage(message.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <i className="fas fa-trash"></i>

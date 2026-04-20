@@ -17,7 +17,7 @@ function SortableSkillCard({ skill, onEdit, onDelete }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: skill._id })
+  } = useSortable({ id: skill.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -81,7 +81,7 @@ function SortableSkillCard({ skill, onEdit, onDelete }) {
               Edit
             </button>
             <button
-              onClick={() => onDelete(skill._id)}
+              onClick={() => onDelete(skill.id)}
               className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
             >
               <Trash2 size={14} className="inline mr-1" />
@@ -125,7 +125,7 @@ export default function SkillsPage() {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (editingSkill) {
-        return skillsAPI.update(editingSkill._id, data)
+        return skillsAPI.update(editingSkill.id, data)
       } else {
         return skillsAPI.create(data)
       }
@@ -178,14 +178,14 @@ export default function SkillsPage() {
 
     if (!over || active.id === over.id) return
 
-    const oldIndex = sortedSkills.findIndex((s) => s._id === active.id)
-    const newIndex = sortedSkills.findIndex((s) => s._id === over.id)
+    const oldIndex = sortedSkills.findIndex((s) => s.id === active.id)
+    const newIndex = sortedSkills.findIndex((s) => s.id === over.id)
 
     const newSkills = arrayMove(sortedSkills, oldIndex, newIndex)
 
     // Update order values
     const reorderedSkills = newSkills.map((skill, index) => ({
-      id: skill._id,
+      id: skill.id,
       order: index
     }))
 
@@ -242,7 +242,7 @@ export default function SkillsPage() {
   const saveCategoryMutation = useMutation({
     mutationFn: async (data) => {
       if (editingCategory) {
-        return skillsAPI.updateCategory(editingCategory._id, data)
+        return skillsAPI.updateCategory(editingCategory.id, data)
       } else {
         return skillsAPI.createCategory(data)
       }
@@ -423,7 +423,7 @@ export default function SkillsPage() {
               </button>
               {categories.map((cat) => (
                 <button
-                  key={cat._id}
+                  key={cat.id}
                   onClick={() => setFilter(cat.name)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     filter === cat.name
@@ -445,13 +445,13 @@ export default function SkillsPage() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={filteredSkills.map(s => s._id)}
+          items={filteredSkills.map(s => s.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-4">
             {filteredSkills.map((skill) => (
               <SortableSkillCard
-                key={skill._id}
+                key={skill.id}
                 skill={skill}
                 onEdit={handleOpenModal}
                 onDelete={handleDelete}
@@ -513,7 +513,7 @@ export default function SkillsPage() {
                 <select {...register('category', { required: true })} className="input">
                   <option value="">Select a category</option>
                   {categories.map((cat) => (
-                    <option key={cat._id} value={cat.name}>{cat.name}</option>
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -579,7 +579,7 @@ export default function SkillsPage() {
         <div className="card">
           <div className="space-y-4">
             {categories.map((category) => (
-              <div key={category._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div key={category.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg">
                     <i className={category.icon}></i>
@@ -598,7 +598,7 @@ export default function SkillsPage() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDeleteCategory(category._id)}
+                    onClick={() => handleDeleteCategory(category.id)}
                     className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
                   >
                     <Trash2 size={14} className="inline mr-1" />

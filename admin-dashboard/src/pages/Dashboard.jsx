@@ -101,7 +101,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             {recentProjects.length > 0 ? (
               recentProjects.map((project) => (
-                <div key={project._id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                <div key={project.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                   <img 
                     src={project.image} 
                     alt={project.name}
@@ -130,7 +130,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             {unreadMessages.length > 0 ? (
               unreadMessages.slice(0, 5).map((message) => (
-                <div key={message._id} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div key={message.id} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-900">{message.name}</h3>
                     <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded-full">New</span>

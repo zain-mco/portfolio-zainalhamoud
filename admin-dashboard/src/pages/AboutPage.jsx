@@ -94,7 +94,7 @@ export default function AboutPage() {
   };
 
   const startEditExperience = (exp) => {
-    setEditingId(exp._id);
+    setEditingId(exp.id);
     setEditingType('experience');
     setExperienceForm({
       title: exp.title,
@@ -146,7 +146,7 @@ export default function AboutPage() {
   };
 
   const startEditEducation = (edu) => {
-    setEditingId(edu._id);
+    setEditingId(edu.id);
     setEditingType('education');
     setEducationForm({
       degree: edu.degree,
@@ -197,7 +197,7 @@ export default function AboutPage() {
   };
 
   const startEditCertification = (cert) => {
-    setEditingId(cert._id);
+    setEditingId(cert.id);
     setEditingType('certification');
     setCertificationForm({
       name: cert.name,
@@ -405,7 +405,7 @@ export default function AboutPage() {
             {aboutData?.workExperience?.length > 0 ? (
               <div className="space-y-4">
                 {aboutData.workExperience.sort((a, b) => a.order - b.order).map((exp) => (
-                  <div key={exp._id} className="border rounded-lg p-4 hover:shadow-md transition">
+                  <div key={exp.id} className="border rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{exp.title}</h3>
@@ -430,7 +430,7 @@ export default function AboutPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteExperience(exp._id)}
+                          onClick={() => handleDeleteExperience(exp.id)}
                           className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                         >
                           Delete
@@ -524,7 +524,7 @@ export default function AboutPage() {
             {aboutData?.education?.length > 0 ? (
               <div className="space-y-4">
                 {aboutData.education.sort((a, b) => a.order - b.order).map((edu) => (
-                  <div key={edu._id} className="border rounded-lg p-4 hover:shadow-md transition">
+                  <div key={edu.id} className="border rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{edu.degree}</h3>
@@ -542,7 +542,7 @@ export default function AboutPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteEducation(edu._id)}
+                          onClick={() => handleDeleteEducation(edu.id)}
                           className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                         >
                           Delete
@@ -627,7 +627,7 @@ export default function AboutPage() {
             {aboutData?.certifications?.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {aboutData.certifications.map((cert) => (
-                  <div key={cert._id} className="border rounded-lg p-4 hover:shadow-md transition">
+                  <div key={cert.id} className="border rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         {cert.image && (
@@ -649,7 +649,7 @@ export default function AboutPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteCertification(cert._id)}
+                          onClick={() => handleDeleteCertification(cert.id)}
                           className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                         >
                           Delete

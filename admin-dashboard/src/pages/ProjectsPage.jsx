@@ -18,7 +18,7 @@ function SortableProjectCard({ project, onEdit, onDelete }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: project._id })
+  } = useSortable({ id: project.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -95,7 +95,7 @@ function SortableProjectCard({ project, onEdit, onDelete }) {
               Edit
             </button>
             <button
-              onClick={() => onDelete(project._id)}
+              onClick={() => onDelete(project.id)}
               className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
             >
               <Trash2 size={14} className="inline mr-1" />
@@ -144,7 +144,7 @@ export default function ProjectsPage() {
       }
 
       if (editingProject) {
-        return projectsAPI.update(editingProject._id, projectData)
+        return projectsAPI.update(editingProject.id, projectData)
       } else {
         return projectsAPI.create(projectData)
       }
@@ -197,14 +197,14 @@ export default function ProjectsPage() {
 
     if (!over || active.id === over.id) return
 
-    const oldIndex = sortedProjects.findIndex((p) => p._id === active.id)
-    const newIndex = sortedProjects.findIndex((p) => p._id === over.id)
+    const oldIndex = sortedProjects.findIndex((p) => p.id === active.id)
+    const newIndex = sortedProjects.findIndex((p) => p.id === over.id)
 
     const newProjects = arrayMove(sortedProjects, oldIndex, newIndex)
 
     // Update order values
     const reorderedProjects = newProjects.map((project, index) => ({
-      id: project._id,
+      id: project.id,
       order: index
     }))
 
@@ -317,13 +317,13 @@ export default function ProjectsPage() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={filteredProjects.map(p => p._id)}
+          items={filteredProjects.map(p => p.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-4">
             {filteredProjects.map((project) => (
               <SortableProjectCard
-                key={project._id}
+                key={project.id}
                 project={project}
                 onEdit={handleOpenModal}
                 onDelete={handleDelete}
