@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Upload, Image as ImageIcon } from 'lucide-react'
+import { mediaAPI } from '../services/api'
+import MediaLibraryModal from './MediaLibraryModal'
 
 export default function CloudinaryUpload({ 
   onUpload, 
@@ -7,6 +9,7 @@ export default function CloudinaryUpload({
   cloudName = 'dhrglhjcb'
 }) {
   const [preview, setPreview] = useState(currentImage)
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false)
   const widgetRef = useRef()
 
   useEffect(() => {
@@ -43,16 +46,32 @@ export default function CloudinaryUpload({
         resourceType: 'image',
         showUploadMoreButton: false
       },
-      (error, result) => {
+      async (error, result) => {
         if (!error && result && result.event === 'success') {
           const imageUrl = result.info.secure_url
+          const publicId = result.info.public_id
+          const folder = result.info.folder || 'portfolio'
+          
           setPreview(imageUrl)
           onUpload(imageUrl)
+
+          // Save to our custom Media Database securely matching the schema
+          try {
+             await mediaAPI.create({ url: imageUrl, publicId: publicId, folder: folder });
+          } catch(e) {
+             console.error("Failed to register media in database: ", e);
+          }
         }
       }
     )
 
     widgetRef.current.open()
+  }
+
+  const handleLibrarySelect = (imageUrl) => {
+    setPreview(imageUrl)
+    onUpload(imageUrl)
+    setIsMediaModalOpen(false)
   }
 
   return (
@@ -78,11 +97,27 @@ export default function CloudinaryUpload({
           <Upload size={20} />
           Upload Image
         </button>
+
+        <button
+          type="button"
+          onClick={() => setIsMediaModalOpen(true)}
+          className="btn-secondary flex items-center gap-2"
+        >
+          <ImageIcon size={20} />
+          Choose from Library
+        </button>
       </div>
 
       <p className="text-sm text-gray-500">
-        Upload an image directly from your local files, camera, or a web URL.
+        Upload a new image or explore the portfolio image database.
       </p>
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal 
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={handleLibrarySelect}
+      />
     </div>
   )
 }

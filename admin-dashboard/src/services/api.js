@@ -248,4 +248,20 @@ export const visitorsAPI = {
   }
 };
 
+// Media API
+export const mediaAPI = {
+  getAll: async () => {
+    const response = await api.get('/media');
+    return response.data.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/media', data);
+    return response.data.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/media/${encodeURIComponent(id)}`);
+    return response.data;
+  }
+};
+
 export default api;
