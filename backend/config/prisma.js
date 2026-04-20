@@ -1,25 +1,15 @@
-const { PrismaClient } = require('../generated/prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+const { PrismaClient } = require('@prisma/client');
 
-// Create a connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-// Create the Prisma adapter
-const adapter = new PrismaPg(pool);
-
-// Singleton pattern to prevent multiple Prisma Client instances in development
+// Singleton pattern to avoid multiple Prisma instances in development
 let prisma;
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({ adapter });
+  prisma = new PrismaClient();
 } else {
-  // In development, reuse the client across hot reloads
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient({ adapter });
+    global.__prisma = new PrismaClient({
+      log: ['warn', 'error'],
+    });
   }
   prisma = global.__prisma;
 }

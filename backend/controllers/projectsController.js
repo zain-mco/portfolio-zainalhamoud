@@ -1,29 +1,13 @@
 const prisma = require('../config/prisma');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
 
-// Helper: format project response
-const formatProjectResponse = (project) => ({
-  _id: project.id,
-  name: project.name,
-  description: project.description,
-  category: project.category,
-  image: project.image,
-  projectLink: project.projectLink,
-  githubLink: project.githubLink,
-  technologies: project.technologies,
-  featured: project.featured,
-  order: project.order,
-  createdAt: project.createdAt,
-  updatedAt: project.updatedAt
-});
-
 // @desc    Get all projects
 // @route   GET /api/projects
 // @access  Public
 exports.getProjects = async (req, res) => {
   try {
     const { category, featured } = req.query;
-    let where = {};
+    const where = {};
 
     if (category) {
       where.category = category;
@@ -44,7 +28,7 @@ exports.getProjects = async (req, res) => {
     res.status(200).json({
       success: true,
       count: projects.length,
-      data: projects.map(formatProjectResponse)
+      data: projects
     });
   } catch (error) {
     res.status(500).json({
@@ -72,7 +56,7 @@ exports.getProject = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: formatProjectResponse(project)
+      data: project
     });
   } catch (error) {
     res.status(500).json({
@@ -95,23 +79,33 @@ exports.createProject = async (req, res) => {
       imageUrl = result.secure_url;
     }
 
-    // Parse technologies if it's a string
+    // Ensure technologies is stored as JSON array
     let technologies = req.body.technologies;
     if (typeof technologies === 'string') {
-      technologies = technologies.split(',').map(t => t.trim()).filter(t => t);
+      try {
+        technologies = JSON.parse(technologies);
+      } catch {
+        technologies = technologies.split(',').map(t => t.trim());
+      }
     }
 
     const project = await prisma.project.create({
       data: {
-        ...req.body,
+        name: req.body.name,
+        description: req.body.description,
+        category: req.body.category,
+        image: imageUrl,
+        projectLink: req.body.projectLink,
+        githubLink: req.body.githubLink || '',
         technologies: technologies || [],
-        image: imageUrl
+        featured: req.body.featured === true || req.body.featured === 'true',
+        order: parseInt(req.body.order) || 0
       }
     });
 
     res.status(201).json({
       success: true,
-      data: formatProjectResponse(project)
+      data: project
     });
   } catch (error) {
     res.status(500).json({
@@ -139,25 +133,27 @@ exports.updateProject = async (req, res) => {
 
     let updateData = { ...req.body };
 
-    // Parse technologies if it's a string
-    if (typeof updateData.technologies === 'string') {
-      updateData.technologies = updateData.technologies.split(',').map(t => t.trim()).filter(t => t);
-    }
-
     // If new image is uploaded
     if (req.file) {
       const result = await uploadImage(req.file.buffer, 'portfolio/projects');
       updateData.image = result.secure_url;
     }
 
-    // Convert featured to boolean if it's a string
-    if (typeof updateData.featured === 'string') {
-      updateData.featured = updateData.featured === 'true';
+    // Ensure technologies is stored as JSON array
+    if (updateData.technologies && typeof updateData.technologies === 'string') {
+      try {
+        updateData.technologies = JSON.parse(updateData.technologies);
+      } catch {
+        updateData.technologies = updateData.technologies.split(',').map(t => t.trim());
+      }
     }
 
-    // Convert order to number if it's a string
-    if (typeof updateData.order === 'string') {
-      updateData.order = parseInt(updateData.order, 10);
+    // Parse boolean and integer fields
+    if (updateData.featured !== undefined) {
+      updateData.featured = updateData.featured === true || updateData.featured === 'true';
+    }
+    if (updateData.order !== undefined) {
+      updateData.order = parseInt(updateData.order) || 0;
     }
 
     project = await prisma.project.update({
@@ -167,7 +163,7 @@ exports.updateProject = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: formatProjectResponse(project)
+      data: project
     });
   } catch (error) {
     res.status(500).json({

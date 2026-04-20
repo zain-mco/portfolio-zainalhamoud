@@ -91,7 +91,7 @@ exports.trackVisitor = async (req, res) => {
 // @access  Private (Admin only)
 exports.getVisitorStats = async (req, res) => {
   try {
-    // Total visitors
+    // Total unique visitors
     const totalVisitors = await prisma.visitor.count();
     
     // Visitors today
@@ -115,16 +115,16 @@ exports.getVisitorStats = async (req, res) => {
       where: { timestamp: { gte: monthAgo } }
     });
     
-    // Browser statistics
+    // Browser statistics using groupBy
     const browserStatsRaw = await prisma.visitor.groupBy({
       by: ['browser'],
       _count: { browser: true },
       orderBy: { _count: { browser: 'desc' } },
       take: 5
     });
-    const browserStats = browserStatsRaw.map(b => ({
-      _id: b.browser,
-      count: b._count.browser
+    const browserStats = browserStatsRaw.map(item => ({
+      _id: item.browser,
+      count: item._count.browser
     }));
     
     // OS statistics
@@ -134,9 +134,9 @@ exports.getVisitorStats = async (req, res) => {
       orderBy: { _count: { os: 'desc' } },
       take: 5
     });
-    const osStats = osStatsRaw.map(o => ({
-      _id: o.os,
-      count: o._count.os
+    const osStats = osStatsRaw.map(item => ({
+      _id: item.os,
+      count: item._count.os
     }));
     
     // Device statistics
@@ -145,23 +145,26 @@ exports.getVisitorStats = async (req, res) => {
       _count: { device: true },
       orderBy: { _count: { device: 'desc' } }
     });
-    const deviceStats = deviceStatsRaw.map(d => ({
-      _id: d.device,
-      count: d._count.device
+    const deviceStats = deviceStatsRaw.map(item => ({
+      _id: item.device,
+      count: item._count.device
     }));
     
-    // Daily visitors for the last 30 days (use raw SQL for date formatting)
+    // Daily visitors for the last 30 days using raw SQL
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const dailyVisitorsRaw = await prisma.$queryRaw`
-      SELECT TO_CHAR(timestamp, 'YYYY-MM-DD') as "_id", 
-             CAST(COUNT(*) AS INTEGER) as "count"
-      FROM "Visitor"
-      WHERE timestamp >= ${thirtyDaysAgo}
-      GROUP BY TO_CHAR(timestamp, 'YYYY-MM-DD')
-      ORDER BY "_id" ASC
+      SELECT DATE("timestamp") as date, COUNT(*)::int as count
+      FROM visitors
+      WHERE "timestamp" >= ${thirtyDaysAgo}
+      GROUP BY DATE("timestamp")
+      ORDER BY date ASC
     `;
+    const dailyVisitors = dailyVisitorsRaw.map(item => ({
+      _id: item.date.toISOString().split('T')[0],
+      count: item.count
+    }));
     
     res.status(200).json({
       success: true,
@@ -173,7 +176,7 @@ exports.getVisitorStats = async (req, res) => {
         browserStats,
         osStats,
         deviceStats,
-        dailyVisitors: dailyVisitorsRaw
+        dailyVisitors
       }
     });
   } catch (error) {
@@ -200,20 +203,7 @@ exports.getRecentVisitors = async (req, res) => {
     res.status(200).json({
       success: true,
       count: visitors.length,
-      data: visitors.map(v => ({
-        _id: v.id,
-        ipAddress: v.ipAddress,
-        userAgent: v.userAgent,
-        timestamp: v.timestamp,
-        browser: v.browser,
-        os: v.os,
-        device: v.device,
-        referrer: v.referrer,
-        country: v.country,
-        city: v.city,
-        createdAt: v.createdAt,
-        updatedAt: v.updatedAt
-      }))
+      data: visitors
     });
   } catch (error) {
     console.error('Error getting recent visitors:', error);

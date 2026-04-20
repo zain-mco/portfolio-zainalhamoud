@@ -9,6 +9,44 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
+// Confirmation Modal Component
+function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-red-100 rounded-full text-red-600">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          </div>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Sortable Project Card Component
 function SortableProjectCard({ project, onEdit, onDelete }) {
   const {
@@ -23,14 +61,17 @@ function SortableProjectCard({ project, onEdit, onDelete }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    // Only apply low opacity when actually dragging to avoid static fade issues
     opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+    position: 'relative'
   }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="card hover:shadow-lg transition-shadow"
+      className={`card hover:shadow-lg transition-shadow overflow-hidden ${isDragging ? 'ring-2 ring-primary-500 shadow-xl' : ''}`}
     >
       <div className="flex items-start gap-4">
         {/* Drag Handle */}
@@ -43,11 +84,13 @@ function SortableProjectCard({ project, onEdit, onDelete }) {
         </div>
 
         {/* Project Image */}
-        <img
-          src={project.image}
-          alt={project.name}
-          className="w-32 h-32 object-cover rounded-lg flex-shrink-0"
-        />
+        <div className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100">
+          <img
+            src={project.image}
+            alt={project.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
 
         {/* Project Content */}
         <div className="flex-1 min-w-0">
@@ -77,7 +120,7 @@ function SortableProjectCard({ project, onEdit, onDelete }) {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-auto">
             <a
               href={project.projectLink}
               target="_blank"
@@ -115,6 +158,9 @@ export default function ProjectsPage() {
   const [imagePreview, setImagePreview] = useState(null)
   const [imageFile, setImageFile] = useState(null)
   const [filter, setFilter] = useState('all')
+
+  // Delete Confirmation State
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null })
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
@@ -257,8 +303,12 @@ export default function ProjectsPage() {
   }
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      deleteMutation.mutate(id)
+    setDeleteConfirm({ isOpen: true, id })
+  }
+
+  const confirmDelete = () => {
+    if (deleteConfirm.id) {
+      deleteMutation.mutate(deleteConfirm.id)
     }
   }
 
@@ -271,11 +321,23 @@ export default function ProjectsPage() {
   ) || []
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-gray-500 font-medium animate-pulse">Loading projects...</p>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
+      <ConfirmationModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+        onConfirm={confirmDelete}
+        title="Delete Project"
+        message="Are you sure you want to delete this project? This action cannot be undone."
+      />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

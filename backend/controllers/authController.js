@@ -17,13 +17,13 @@ exports.register = async (req, res) => {
     const { username, email, password, role } = req.body;
 
     // Check if user exists
-    const existingUser = await prisma.user.findFirst({
+    const userExists = await prisma.user.findFirst({
       where: {
         OR: [{ email }, { username }]
       }
     });
 
-    if (existingUser) {
+    if (userExists) {
       return res.status(400).json({
         success: false,
         message: 'User already exists'
@@ -38,7 +38,7 @@ exports.register = async (req, res) => {
     const user = await prisma.user.create({
       data: {
         username,
-        email: email.toLowerCase().trim(),
+        email,
         password: hashedPassword,
         role: role || 'admin'
       }
@@ -77,7 +77,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check for user (include password field)
+    // Check for user
     const user = await prisma.user.findUnique({
       where: { email }
     });
@@ -144,15 +144,7 @@ exports.getMe = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: {
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
+      data: user
     });
   } catch (error) {
     res.status(500).json({

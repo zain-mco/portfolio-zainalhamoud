@@ -1,42 +1,6 @@
 const prisma = require('../config/prisma');
 const { uploadImage } = require('../utils/cloudinary');
 
-// Helper: format personal response to match MongoDB nested structure
-const formatPersonalResponse = (personal) => {
-  if (!personal) return null;
-  return {
-    _id: personal.id,
-    name: personal.name,
-    title: personal.title,
-    bio: personal.bio,
-    description: personal.description,
-    profileImage: personal.profileImage,
-    resumeFile: personal.resumeFile,
-    typewriterTexts: personal.typewriterTexts,
-    heroStats: {
-      projects: personal.statProjects,
-      experience: personal.statExperience,
-      satisfaction: personal.statSatisfaction
-    },
-    createdAt: personal.createdAt,
-    updatedAt: personal.updatedAt
-  };
-};
-
-// Helper: extract heroStats from request body into flat columns
-const extractPersonalData = (body) => {
-  const { heroStats, ...rest } = body;
-  const data = { ...rest };
-  
-  if (heroStats) {
-    if (heroStats.projects !== undefined) data.statProjects = heroStats.projects;
-    if (heroStats.experience !== undefined) data.statExperience = heroStats.experience;
-    if (heroStats.satisfaction !== undefined) data.statSatisfaction = heroStats.satisfaction;
-  }
-  
-  return data;
-};
-
 // @desc    Get personal info
 // @route   GET /api/personal
 // @access  Public
@@ -55,7 +19,7 @@ exports.getPersonal = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: formatPersonalResponse(personal)
+      data: personal
     });
   } catch (error) {
     res.status(500).json({
@@ -71,21 +35,24 @@ exports.getPersonal = async (req, res) => {
 exports.updatePersonal = async (req, res) => {
   try {
     let personal = await prisma.personal.findFirst();
-    const { _id, id, createdAt, updatedAt, __v, ...bodyWithoutMeta } = req.body;
-    const data = extractPersonalData(bodyWithoutMeta);
+
+    // Prevent Prisma strict database validation crash
+    const { _id, id, createdAt, updatedAt, __v, ...safeData } = req.body;
 
     if (!personal) {
-      personal = await prisma.personal.create({ data });
+      personal = await prisma.personal.create({
+        data: safeData
+      });
     } else {
       personal = await prisma.personal.update({
         where: { id: personal.id },
-        data
+        data: safeData
       });
     }
 
     res.status(200).json({
       success: true,
-      data: formatPersonalResponse(personal)
+      data: personal
     });
   } catch (error) {
     res.status(500).json({
