@@ -1,4 +1,4 @@
-const prisma = require('../config/db');
+const prisma = require('../config/prisma');
 
 // @desc    Get all media
 // @route   GET /api/media

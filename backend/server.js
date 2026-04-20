@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
-const prisma = require('./config/db');
+const prisma = require('./config/prisma');
 
 // Load env vars
 dotenv.config();
