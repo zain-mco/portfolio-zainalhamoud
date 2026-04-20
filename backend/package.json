@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed": "node utils/seed.js"
+    "seed": "node utils/seed.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "portfolio",
@@ -16,8 +17,7 @@
   "author": "Zain L. Alhamoud",
   "license": "MIT",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.7.0",
-    "@prisma/client": "^7.7.0",
+    "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.0",
     "compression": "^1.7.4",
@@ -31,11 +31,10 @@
     "mongodb": "^7.1.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "pg": "^8.20.0",
     "streamifier": "^0.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
-    "prisma": "^7.7.0"
+    "prisma": "^5.22.0"
   }
 }
