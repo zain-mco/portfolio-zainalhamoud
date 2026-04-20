@@ -76,21 +76,12 @@ export default function CloudinaryUpload({
           className="btn-primary flex items-center gap-2"
         >
           <Upload size={20} />
-          Upload New Image
-        </button>
-
-        <button
-          type="button"
-          onClick={openUploadWidget}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <ImageIcon size={20} />
-          Choose from Library
+          Upload Image
         </button>
       </div>
 
       <p className="text-sm text-gray-500">
-        Upload a new image or choose from previously uploaded images (widget shows both options)
+        Upload an image directly from your local files, camera, or a web URL.
       </p>
     </div>
   )
