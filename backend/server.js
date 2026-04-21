@@ -24,7 +24,8 @@ const corsOptions = {
     process.env.CORS_ORIGIN_PORTFOLIO || 'http://localhost:5173',
     process.env.CORS_ORIGIN_ADMIN || 'http://localhost:5174',
     'http://localhost:3000',
-    'http://127.0.0.1:5500' // For testing with Live Server
+    'http://127.0.0.1:5500', // For testing with Live Server
+    'http://localhost'       // For XAMPP environment
   ],
   credentials: true,
   optionsSuccessStatus: 200

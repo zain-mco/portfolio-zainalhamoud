@@ -1,3 +1,5 @@
+import config from './config.js';
+
 // Initialize AOS (Animate On Scroll)
 AOS.init({
     duration: 1000,
@@ -49,15 +51,55 @@ class TypeWriter {
     }
 }
 
-// Initialize Typewriter
-document.addEventListener('DOMContentLoaded', function() {
-    const txtElement = document.querySelector('#typewriter');
-    const words = ['UI/UX Designer', 'Web Developer', 'Creative Thinker', 'Problem Solver'];
-    const wait = 3000;
-
-    if (txtElement) {
-        new TypeWriter(txtElement, words, wait);
+// Dynamic Data Fetching
+async function fetchPersonalData() {
+    try {
+        const response = await fetch(`${config.API_URL}/personal`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const personal = result.data;
+            
+            // Update Hero Section
+            const heroName = document.querySelector('#hero-name');
+            const heroDescription = document.querySelector('#hero-description');
+            const txtElement = document.querySelector('#typewriter');
+            
+            if (heroName) heroName.textContent = personal.name;
+            if (heroDescription) heroDescription.textContent = personal.description;
+            
+            // Stats Section
+            const statProjects = document.querySelector('#stat-projects');
+            const statExperience = document.querySelector('#stat-experience');
+            const statSatisfaction = document.querySelector('#stat-satisfaction');
+            
+            if (statProjects) statProjects.textContent = personal.statProjects;
+            if (statExperience) statExperience.textContent = personal.statExperience;
+            if (statSatisfaction) statSatisfaction.textContent = personal.statSatisfaction;
+            
+            // Initialize Typewriter with dynamic words
+            const words = personal.typewriterTexts && personal.typewriterTexts.length > 0
+                ? personal.typewriterTexts 
+                : ['UI/UX Designer', 'Web Developer', 'Creative Thinker', 'Problem Solver'];
+                
+            if (txtElement) {
+                new TypeWriter(txtElement, words, 3000);
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching personal data:', error);
+        // Fallback to static initialization if API fails
+        const txtElement = document.querySelector('#typewriter');
+        const words = ['UI/UX Designer', 'Web Developer', 'Creative Thinker', 'Problem Solver'];
+        if (txtElement) {
+            new TypeWriter(txtElement, words, 3000);
+        }
     }
+}
+
+// Initialize Dynamic Content
+document.addEventListener('DOMContentLoaded', function() {
+    fetchPersonalData();
 });
 
 // Particles.js Configuration
