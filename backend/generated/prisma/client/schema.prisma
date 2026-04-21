@@ -163,7 +163,7 @@ model Settings {
   maintenanceMode     Boolean  @default(false)
   customCSS           String   @default("")
   customJS            String   @default("")
-  footerText          String   @default("© 2025 Zain L. Alhamoud. All rights reserved.")
+  footerText          String   @default("© 2026 Zain L. Alhamoud. All rights reserved.")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
