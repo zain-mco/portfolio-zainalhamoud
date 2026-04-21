@@ -12,9 +12,9 @@ model About {
   description    String
   createdAt      DateTime         @default(now())
   updatedAt DateTime @updatedAt
-  Certification  Certification[]
-  Education      Education[]
-  WorkExperience WorkExperience[]
+  certifications Certification[]
+  education Education[]
+  workExperience WorkExperience[]
 }
 
 model AdditionalTech {
@@ -42,7 +42,7 @@ model Contact {
   whatsapp   String?      @default("971504235113")
   createdAt  DateTime     @default(now())
   updatedAt DateTime @updatedAt
-  SocialLink SocialLink[]
+  socialLinks SocialLink[]
 }
 
 model Education {
