@@ -28,13 +28,53 @@ const queryClient = new QueryClient({
   }
 })
 
+function Typewriter({ words, wait = 3000 }) {
+  const [txt, setTxt] = useState('');
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!words || words.length === 0) return;
+
+    const current = wordIndex % words.length;
+    const fullTxt = words[current];
+
+    const type = () => {
+      if (isDeleting) {
+        setTxt(fullTxt.substring(0, txt.length - 1));
+      } else {
+        setTxt(fullTxt.substring(0, txt.length + 1));
+      }
+
+      let typeSpeed = 100;
+      if (isDeleting) typeSpeed /= 2;
+
+      if (!isDeleting && txt === fullTxt) {
+        typeSpeed = wait;
+        setIsDeleting(true);
+      } else if (isDeleting && txt === '') {
+        setIsDeleting(false);
+        setWordIndex(wordIndex + 1);
+        typeSpeed = 500;
+      }
+
+      return typeSpeed;
+    };
+
+    const timer = setTimeout(type, 100);
+    return () => clearTimeout(timer);
+  }, [txt, isDeleting, wordIndex, words, wait]);
+
+  return <span className="txt">{txt}</span>;
+}
+
 function PortfolioApp() {
   const [filter, setFilter] = useState('all')
   
   const { data: personal } = useQuery({ 
     queryKey: ['personal'], 
     queryFn: getPersonalInfo,
-    refetchInterval: 30000 // Refetch every 30 seconds
+    refetchInterval: 30000 
   })
   const { data: about } = useQuery({ queryKey: ['about'], queryFn: getAbout })
   const { data: skillsData } = useQuery({ queryKey: ['skills'], queryFn: getSkills })
@@ -143,7 +183,7 @@ function PortfolioApp() {
       </nav>
 
       {/* Hero Section */}
-      <section id="home" className="hero-section">
+      <section id="home" class="hero-section">
         <div className="container">
           <div className="row align-items-center min-vh-100">
             <div className="col-lg-6" data-aos="fade-right">
@@ -152,21 +192,25 @@ function PortfolioApp() {
                   Hi, I'm <br></br><span className="gradient-text">{personal?.name}</span>
                 </h1>
                 <h2 className="hero-subtitle">
-                  <span id="typewriter">{personal?.title}</span>
+                  <span id="typewriter">
+                    <Typewriter 
+                      words={personal?.typewriterTexts?.length > 0 ? personal.typewriterTexts : [personal?.title]} 
+                    />
+                  </span>
                 </h2>
-                <p className="hero-description">{personal?.bio} {personal?.description}</p>
+                <p className="hero-description">{personal?.description || personal?.bio}</p>
                 
                 <div className="stats-container">
                   <div className="stat-item">
-                    <span className="stat-number">{personal?.heroStats?.projects}</span>
+                    <span className="stat-number">{personal?.statProjects || '0+'}</span>
                     <span className="stat-label">Projects</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-number">{personal?.heroStats?.experience}</span>
+                    <span className="stat-number">{personal?.statExperience || '0+'}</span>
                     <span className="stat-label">Years Exp</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-number">{personal?.heroStats?.satisfaction}</span>
+                    <span className="stat-number">{personal?.statSatisfaction || '100%'}</span>
                     <span className="stat-label">Satisfaction</span>
                   </div>
                 </div>
@@ -184,7 +228,7 @@ function PortfolioApp() {
                   <div className="orbital-ring ring-2"></div>
                   <div className="profile-image">
                     <img 
-                      src={personal?.profileImage ? `${personal.profileImage}?t=${Date.now()}` : "/assets/zain.svg"} 
+                      src={personal?.profileImage ? (personal.profileImage.startsWith('http') ? personal.profileImage : `/${personal.profileImage}`) : "/assets/zain.svg"} 
                       alt={personal?.name} 
                       key={personal?.profileImage} 
                     />
